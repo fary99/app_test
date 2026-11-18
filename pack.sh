@@ -4,7 +4,10 @@
 # Optional: STORE_BASE=https://raw.githubusercontent.com/OWNER/REPO/main ./pack.sh
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BASE="${STORE_BASE:-https://raw.githubusercontent.com/fary99/app_test/main}"
+# Default: GitHub Contents API (works when raw.githubusercontent.com is blocked).
+REPO="${STORE_REPO:-fary99/app_test}"
+REF="${STORE_REF:-main}"
+BASE="${STORE_BASE:-https://api.github.com/repos/$REPO/contents}"
 PKG="$HERE/packages"
 mkdir -p "$PKG"
 rm -f "$PKG"/*.zip
@@ -24,8 +27,8 @@ for app in "$HERE"/apps/*/; do
 		# zip contents are the project root (manifest.json at top level)
 		zip -qr "$PKG/$zipname" . -x '*.pyc' -x '*__pycache__*' -x '*.git*'
 	)
-	icon_url="$BASE/apps/$id/icon.svg"
-	dl="$BASE/packages/$zipname"
+	icon_url="$BASE/apps/$id/icon.svg?ref=$REF"
+	dl="$BASE/packages/$zipname?ref=$REF"
 	entry=$(printf '{"id":"%s","name":{"zh-CN":"%s","en-US":"%s"},"summary":{"zh-CN":"示例应用 %s","en-US":"Sample app %s"},"version":"%s","min_sdk":"0.3.0","icon":"%s","download":"%s"}' \
 		"$id" "$name_zh" "$name_en" "$id" "$id" "$ver" "$icon_url" "$dl")
 	if [ "$first" = 1 ]; then

@@ -13,8 +13,8 @@
       },
       "version": "0.1.0",
       "min_sdk": "0.3.0",
-      "icon": "https://raw.githubusercontent.com/fary99/app_test/main/apps/store-counter/icon.svg",
-      "download": "https://raw.githubusercontent.com/fary99/app_test/main/packages/store-counter-0.1.0.zip"
+      "icon": "https://api.github.com/repos/fary99/app_test/contents/apps/store-counter/icon.svg?ref=main",
+      "download": "https://api.github.com/repos/fary99/app_test/contents/packages/store-counter-0.1.0.zip?ref=main"
     },
     {
       "id": "store-hello",
@@ -28,8 +28,8 @@
       },
       "version": "0.1.0",
       "min_sdk": "0.3.0",
-      "icon": "https://raw.githubusercontent.com/fary99/app_test/main/apps/store-hello/icon.svg",
-      "download": "https://raw.githubusercontent.com/fary99/app_test/main/packages/store-hello-0.1.0.zip"
+      "icon": "https://api.github.com/repos/fary99/app_test/contents/apps/store-hello/icon.svg?ref=main",
+      "download": "https://api.github.com/repos/fary99/app_test/contents/packages/store-hello-0.1.0.zip?ref=main"
     }
   ]
 }

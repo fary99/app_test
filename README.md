@@ -1,8 +1,10 @@
 # M20 应用商店种子目录（原型）
 
-推送到公开仓库 [fary99/app_test](https://github.com/fary99/app_test) 后，板上商店 App 读取：
+推送到公开仓库 [fary99/app_test](https://github.com/fary99/app_test) 后，板上商店 App 默认读取（GitHub Contents API，避免 raw CDN 超时）：
 
-`https://raw.githubusercontent.com/fary99/app_test/main/catalog.json`
+`https://api.github.com/repos/fary99/app_test/contents/catalog.json`
+
+可用环境变量 `M20_STORE_CATALOG` 覆盖。
 
 ## 布局
 
