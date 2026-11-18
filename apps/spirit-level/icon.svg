@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56">
+  <rect width="56" height="56" rx="14" fill="#2a3140"/>
+  <!-- vial outer ring -->
+  <circle cx="28" cy="28" r="16" fill="#1a222e" stroke="#5ec8d8" stroke-width="2.5"/>
+  <!-- liquid -->
+  <circle cx="28" cy="28" r="12.5" fill="#3aa8b8" opacity="0.35"/>
+  <!-- crosshair -->
+  <line x1="28" y1="14.5" x2="28" y2="19" stroke="#9ad9e3" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="28" y1="37" x2="28" y2="41.5" stroke="#9ad9e3" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="14.5" y1="28" x2="19" y2="28" stroke="#9ad9e3" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="37" y1="28" x2="41.5" y2="28" stroke="#9ad9e3" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- bubble -->
+  <circle cx="31.5" cy="24.5" r="5.2" fill="#e8fbff" opacity="0.95"/>
+  <circle cx="30.2" cy="23.2" r="1.6" fill="#fff"/>
+  <!-- level mark -->
+  <circle cx="28" cy="28" r="1.6" fill="#5ddea0"/>
+</svg>

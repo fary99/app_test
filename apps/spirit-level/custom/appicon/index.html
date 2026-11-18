@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: transparent; overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<script type="module">
+import { host } from "/sdk/m20-custom.js";
+
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+
+const st = {
+  W: 0, H: 0,
+  flat: true, ax: 0, ay: 0, range: 6,
+  bx: 0, by: 0, tx: 0, ty: 0,
+  running: false
+};
+
+/* ---------------- 工具 ---------------- */
+function rr(x, y, w, h, r) {
+  const rad = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
+}
+
+function clamp(v) { return Math.max(-1, Math.min(1, v)); }
+
+/* ---------------- 图标主体 ---------------- */
+function draw() {
+  const S = Math.min(st.W, st.H);
+  if (!S) return;
+  ctx.clearRect(0, 0, st.W, st.H);
+
+  ctx.save();
+  ctx.translate((st.W - S) / 2, (st.H - S) / 2);
+
+  const cx = S / 2, cy = S / 2;
+  const pad = S * 0.015;
+  const w = S - pad * 2;
+  const rad = S * 0.235;          // 大圆角 → 类 squircle 桌面图标外形
+  const lw = Math.max(1, S * 0.009);
+  const hiDetail = S >= 72;       // 滚花 / 刻度：小尺寸自动隐藏
+  const midDetail = S >= 52;      // 拉丝纹理
+
+  /* 1. 深色金属底 */
+  rr(pad, pad, w, w, rad);
+  let g = ctx.createLinearGradient(0, 0, S, S);
+  g.addColorStop(0, "#4a535d");
+  g.addColorStop(0.36, "#232a33");
+  g.addColorStop(0.72, "#12171d");
+  g.addColorStop(1, "#07090c");
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  /* 2. 横向拉丝纹理 */
+  if (midDetail) {
+    ctx.save();
+    rr(pad, pad, w, w, rad);
+    ctx.clip();
+    const step = Math.max(2, S / 46);
+    ctx.lineWidth = 1;
+    for (let y = 0; y < S; y += step) {
+      const a = 0.010 + 0.028 * Math.abs(Math.sin(y * 12.9898));
+      ctx.strokeStyle = "rgba(255,255,255," + a.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(S, y + 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* 3. 斜向镜面高光 */
+  ctx.save();
+  rr(pad, pad, w, w, rad);
+  ctx.clip();
+  const sg = ctx.createLinearGradient(0, 0, S * 0.92, S * 0.98);
+  sg.addColorStop(0, "rgba(255,255,255,0.17)");
+  sg.addColorStop(0.4, "rgba(255,255,255,0.03)");
+  sg.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, 0, S, S);
+  ctx.restore();
+
+  /* 4. 倒角：亮内边 + 暗外沿 */
+  rr(pad + S * 0.005, pad + S * 0.005, w - S * 0.010, w - S * 0.010, rad);
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = lw;
+  ctx.stroke();
+  rr(pad, pad, w, w, rad);
+  ctx.strokeStyle = "rgba(0,0,0,0.7)";
+  ctx.lineWidth = Math.max(1, S * 0.013);
+  ctx.stroke();
+
+  /* 5. 滚花环 */
+  if (hiDetail) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, S * 0.408, 0, Math.PI * 2);
+    ctx.setLineDash([Math.max(1.5, S * 0.016), Math.max(1.5, S * 0.014)]);
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = Math.max(1, S * 0.020);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* 6. 车削金属表圈 */
+  const Rb = S * 0.352;
+  const Rg = S * 0.298;
+  const rg = ctx.createLinearGradient(cx - Rb, cy - Rb, cx + Rb, cy + Rb);
+  rg.addColorStop(0, "#69727b");
+  rg.addColorStop(0.18, "#eef4f8");
+  rg.addColorStop(0.40, "#99a1a9");
+  rg.addColorStop(0.58, "#3d444b");
+  rg.addColorStop(0.78, "#c4ccd3");
+  rg.addColorStop(1, "#2a2f35");
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rb, 0, Math.PI * 2);
+  ctx.fillStyle = rg;
+  ctx.fill();
+
+  /* 表圈内侧凹陷阴影 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rg + S * 0.014, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fill();
+
+  /* 7. 玻璃视窗（深酒绿） */
+  const gg = ctx.createRadialGradient(cx - Rg * 0.34, cy - Rg * 0.42, Rg * 0.06, cx, cy, Rg);
+  gg.addColorStop(0, "#20704f");
+  gg.addColorStop(0.5, "#0d3327");
+  gg.addColorStop(1, "#05100c");
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rg, 0, Math.PI * 2);
+  ctx.fillStyle = gg;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = Math.max(1, S * 0.008);
+  ctx.stroke();
+
+  /* 8. 玻璃内：准线 + 容差圈 + 四点刻度 */
+  const accent = st.flat ? "70,232,140" : "255,183,51";
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rg * 0.985, 0, Math.PI * 2);
+  ctx.clip();
+
+  ctx.setLineDash([Math.max(2, S * 0.014), Math.max(2, S * 0.016)]);
+  ctx.strokeStyle = "rgba(170,245,210,0.20)";
+  ctx.lineWidth = Math.max(1, S * 0.007);
+  ctx.beginPath();
+  ctx.moveTo(cx - Rg, cy);
+  ctx.lineTo(cx + Rg, cy);
+  ctx.moveTo(cx, cy - Rg);
+  ctx.lineTo(cx, cy + Rg);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rg * 0.44, 0, Math.PI * 2);
+  ctx.setLineDash([Math.max(1.5, S * 0.012), Math.max(1.5, S * 0.014)]);
+  ctx.strokeStyle = "rgba(" + accent + "," + (st.flat ? 0.7 : 0.42) + ")";
+  ctx.lineWidth = Math.max(1, S * 0.008);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (hiDetail) {
+    ctx.strokeStyle = "rgba(150,255,200,0.45)";
+    ctx.lineWidth = Math.max(1, S * 0.008);
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * Rg * 0.80, cy + Math.sin(a) * Rg * 0.80);
+      ctx.lineTo(cx + Math.cos(a) * Rg * 0.94, cy + Math.sin(a) * Rg * 0.94);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  /* 9. 水准泡（跟随 IMU 偏移） */
+  const Rbub = Math.max(1.6, Rg * (hiDetail ? 0.29 : 0.34));
+  const tr = Rg * 0.60;
+  const px = cx + clamp(st.bx) * tr;
+  const py = cy + clamp(st.by) * tr;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(" + accent + ",0.9)";
+  ctx.shadowBlur = Math.max(3, S * (st.flat ? 0.055 : 0.04));
+  const bgr = ctx.createRadialGradient(px - Rbub * 0.32, py - Rbub * 0.36, Rbub * 0.08, px, py, Rbub);
+  bgr.addColorStop(0, "rgba(255,255,255,0.96)");
+  bgr.addColorStop(0.34, "rgba(" + accent + ",0.80)");
+  bgr.addColorStop(1, "rgba(" + accent + ",0.18)");
+  ctx.beginPath();
+  ctx.arc(px, py, Rbub, 0, Math.PI * 2);
+  ctx.fillStyle = bgr;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(px, py, Rbub, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  ctx.lineWidth = Math.max(1, S * 0.007);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(px - Rbub * 0.3, py - Rbub * 0.34, Rbub * 0.28, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fill();
+
+  /* 10. 玻璃反光弧 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.402, Math.PI * 1.06, Math.PI * 1.62);
+  ctx.strokeStyle = "rgba(255,255,255,0.075)";
+  ctx.lineWidth = S * 0.042;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ---------------- 尺寸 / 动画 ---------------- */
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  st.W = cv.clientWidth || cv.parentElement.clientWidth || 0;
+  st.H = cv.clientHeight || cv.parentElement.clientHeight || 0;
+  cv.width = Math.max(1, Math.round(st.W * dpr));
+  cv.height = Math.max(1, Math.round(st.H * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+
+function tick() {
+  let moving = false;
+  st.bx += (st.tx - st.bx) * 0.24;
+  st.by += (st.ty - st.by) * 0.24;
+  if (Math.abs(st.tx - st.bx) > 0.002 || Math.abs(st.ty - st.by) > 0.002) {
+    moving = true;
+  } else {
+    st.bx = st.tx;
+    st.by = st.ty;
+  }
+  draw();
+  if (moving) {
+    requestAnimationFrame(tick);
+  } else {
+    st.running = false;
+  }
+}
+
+function kick() {
+  if (st.running || !st.W) return;
+  st.running = true;
+  requestAnimationFrame(tick);
+}
+
+/* ---------------- 与 Python 通信 ---------------- */
+function setProps(p) {
+  st.flat = p.flat === undefined ? st.flat : !!p.flat;
+  if (typeof p.range === "number" && p.range > 0.5) st.range = p.range;
+  if (typeof p.ax === "number") st.ax = p.ax;
+  if (typeof p.ay === "number") st.ay = p.ay;
+  // 气泡浮向高处：与重力分量方向相反
+  st.tx = clamp(-st.ax / st.range);
+  st.ty = clamp(-st.ay / st.range);
+  kick();
+}
+
+host.onProps(setProps);
+
+cv.addEventListener("pointerdown", function () { host.emit("tap", 0); });
+window.addEventListener("resize", resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
+
+resize();
+draw();
+</script>
+</body>
+</html>

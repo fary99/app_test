@@ -1,0 +1,15 @@
+{
+  "name": { "zh-CN": "机械水平仪", "en-US": "Precision Level" },
+  "icon": "◎",
+  "size": [440, 420],
+  "props": {
+    "ax": { "type": "number", "default": 0, "label": { "zh-CN": "X 加速度" } },
+    "ay": { "type": "number", "default": 0, "label": { "zh-CN": "Y 加速度" } },
+    "angle": { "type": "number", "default": 0, "label": { "zh-CN": "倾角" } },
+    "flat": { "type": "boolean", "default": false, "label": { "zh-CN": "水平" } },
+    "range": { "type": "number", "default": 8, "label": { "zh-CN": "满量程 m/s²" } }
+  },
+  "events": {
+    "tap": { "label": { "zh-CN": "点按表盘归零" }, "value": "number" }
+  }
+}

@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "texts": {
+    "zh-CN": {
+      "title": "精密水平仪",
+      "subtitle": "MECHANICAL LEVEL · 9 轴 IMU",
+      "status_init": "校准中…",
+      "status_flat": "水平 ◆",
+      "status_tilt": "倾斜 ◆",
+      "x_label": "横向 X",
+      "y_label": "纵向 Y",
+      "deg_label": "倾角",
+      "hint": "点按表盘或「归零校准」可把当前姿态设为参考零位",
+      "zero_btn": "归零校准",
+      "led_label": "灯带联动",
+      "icon_title": "应用图标",
+      "icon_sub": "拉丝金属底 + 车削表圈 + 绿色水准泡",
+      "icon_desc": "同一套机械语言，任意尺寸都清晰：≤64px 自动隐藏滚花与刻度，只留气泡与准线。",
+      "icon_back": "返回水平仪"
+    },
+    "en-US": {
+      "title": "Precision Level",
+      "subtitle": "MECHANICAL LEVEL · 9-AXIS IMU",
+      "status_init": "Calibrating…",
+      "status_flat": "LEVEL ◆",
+      "status_tilt": "TILTED ◆",
+      "x_label": "Pitch X",
+      "y_label": "Roll Y",
+      "deg_label": "TILT",
+      "hint": "Tap the dial or ZERO to set the current pose as reference",
+      "zero_btn": "Zero",
+      "led_label": "LED strip",
+      "icon_title": "App Icon",
+      "icon_sub": "Brushed metal, turned bezel, green bubble",
+      "icon_desc": "One mechanical language at any size: knurling and ticks drop out below 64px.",
+      "icon_back": "Back to level"
+    }
+  },
+  "pages": [
+    {
+      "id": "home",
+      "layout": {
+        "type": "column",
+        "gap": "sm",
+        "padding": "md"
+      },
+      "children": [
+        {
+          "type": "Row",
+          "justify": "between",
+          "align": "center",
+          "children": [
+            {
+              "type": "Row",
+              "gap": "xs",
+              "align": "center",
+              "grow": 1,
+              "children": [
+                {
+                  "type": "Custom",
+                  "id": "app_icon",
+                  "component": "appicon",
+                  "width": 40,
+                  "height": 40,
+                  "props": {
+                    "flat": true,
+                    "ax": 0,
+                    "ay": 0,
+                    "range": 6
+                  },
+                  "onMessage": "on_app_icon"
+                },
+                {
+                  "type": "Label",
+                  "text": "@title",
+                  "font": "title"
+                }
+              ]
+            },
+            {
+              "type": "Label",
+              "id": "status_badge",
+              "text": "@status_init",
+              "font": "caption",
+              "align": "end"
+            }
+          ]
+        },
+        {
+          "type": "Label",
+          "id": "sub_label",
+          "text": "@subtitle",
+          "font": "caption"
+        },
+        {
+          "type": "Custom",
+          "id": "gauge",
+          "component": "levelgauge",
+          "width": "100%",
+          "grow": 1,
+          "props": {
+            "ax": 0,
+            "ay": 0,
+            "angle": 0,
+            "flat": false,
+            "range": 8
+          },
+          "onMessage": "on_gauge"
+        },
+        {
+          "type": "Row",
+          "children": [
+            {
+              "type": "Column",
+              "grow": 1,
+              "children": [
+                {
+                  "type": "Label",
+                  "text": "@x_label",
+                  "font": "caption",
+                  "align": "center"
+                },
+                {
+                  "type": "Label",
+                  "id": "x_val",
+                  "text": "+0.00",
+                  "font": "title",
+                  "align": "center"
+                }
+              ],
+              "gap": "none",
+              "align": "center",
+              "card": true
+            },
+            {
+              "type": "Column",
+              "grow": 1,
+              "children": [
+                {
+                  "type": "Label",
+                  "text": "@deg_label",
+                  "font": "caption",
+                  "align": "center"
+                },
+                {
+                  "type": "Label",
+                  "id": "angle_val",
+                  "text": "0.0°",
+                  "font": "title",
+                  "align": "center"
+                }
+              ],
+              "gap": "none",
+              "align": "center",
+              "card": true
+            },
+            {
+              "type": "Column",
+              "grow": 1,
+              "children": [
+                {
+                  "type": "Label",
+                  "text": "@y_label",
+                  "font": "caption",
+                  "align": "center"
+                },
+                {
+                  "type": "Label",
+                  "id": "y_val",
+                  "text": "+0.00",
+                  "font": "title",
+                  "align": "center"
+                }
+              ],
+              "gap": "none",
+              "align": "center",
+              "card": true
+            }
+          ],
+          "gap": "sm",
+          "align": "stretch"
+        },
+        {
+          "type": "Label",
+          "id": "hint_label",
+          "text": "@hint",
+          "font": "caption",
+          "align": "center"
+        },
+        {
+          "type": "Row",
+          "children": [
+            {
+              "type": "Button",
+              "id": "zero_btn",
+              "text": "@zero_btn",
+              "tone": "primary",
+              "grow": 1,
+              "onTap": "on_zero"
+            },
+            {
+              "type": "Switch",
+              "id": "led_sw",
+              "text": "@led_label",
+              "value": true,
+              "onChange": "on_led"
+            }
+          ],
+          "gap": "sm",
+          "align": "center"
+        }
+      ]
+    },
+    {
+      "id": "icon",
+      "layout": {
+        "type": "column",
+        "gap": "md",
+        "padding": "md",
+        "align": "center"
+      },
+      "children": [
+        {
+          "type": "Label",
+          "text": "@icon_title",
+          "font": "title",
+          "align": "center"
+        },
+        {
+          "type": "Label",
+          "text": "@icon_sub",
+          "font": "caption",
+          "align": "center"
+        },
+        {
+          "type": "Custom",
+          "id": "icon_big",
+          "component": "appicon",
+          "width": 210,
+          "height": 210,
+          "props": {
+            "flat": true,
+            "ax": 0,
+            "ay": 0,
+            "range": 6
+          }
+        },
+        {
+          "type": "Row",
+          "gap": "md",
+          "justify": "center",
+          "align": "end",
+          "children": [
+            {
+              "type": "Column",
+              "gap": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "Custom",
+                  "id": "icon_lg",
+                  "component": "appicon",
+                  "width": 96,
+                  "height": 96,
+                  "props": {
+                    "flat": true,
+                    "ax": 0,
+                    "ay": 0,
+                    "range": 6
+                  }
+                },
+                {
+                  "type": "Label",
+                  "text": "96 px",
+                  "font": "caption",
+                  "align": "center"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "gap": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "Custom",
+                  "id": "icon_md",
+                  "component": "appicon",
+                  "width": 72,
+                  "height": 72,
+                  "props": {
+                    "flat": true,
+                    "ax": 0,
+                    "ay": 0,
+                    "range": 6
+                  }
+                },
+                {
+                  "type": "Label",
+                  "text": "72 px",
+                  "font": "caption",
+                  "align": "center"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "gap": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "Custom",
+                  "id": "icon_sm",
+                  "component": "appicon",
+                  "width": 48,
+                  "height": 48,
+                  "props": {
+                    "flat": true,
+                    "ax": 0,
+                    "ay": 0,
+                    "range": 6
+                  }
+                },
+                {
+                  "type": "Label",
+                  "text": "48 px",
+                  "font": "caption",
+                  "align": "center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Label",
+          "text": "@icon_desc",
+          "font": "caption",
+          "align": "center"
+        },
+        {
+          "type": "Button",
+          "text": "@icon_back",
+          "tone": "default",
+          "onTap": {
+            "action": "navigate",
+            "page": "home"
+          }
+        }
+      ]
+    }
+  ]
+}

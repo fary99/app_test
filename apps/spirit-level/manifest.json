@@ -1,0 +1,11 @@
+{
+  "id": "spirit-level",
+  "name": {
+    "zh-CN": "水平仪",
+    "en-US": "Spirit Level"
+  },
+  "version": "0.1.0",
+  "icon": "icon.svg",
+  "orientation": "any",
+  "permissions": []
+}

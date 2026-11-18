@@ -1,0 +1,14 @@
+{
+  "name": { "zh-CN": "应用图标", "en-US": "App Icon" },
+  "icon": "◉",
+  "size": [160, 160],
+  "props": {
+    "flat": { "type": "boolean", "default": true, "label": { "zh-CN": "水平（绿色）/ 倾斜（琥珀）" } },
+    "ax": { "type": "number", "default": 0, "label": { "zh-CN": "X 加速度（驱动气泡）" } },
+    "ay": { "type": "number", "default": 0, "label": { "zh-CN": "Y 加速度（驱动气泡）" } },
+    "range": { "type": "number", "default": 6, "label": { "zh-CN": "气泡满量程 m/s²" } }
+  },
+  "events": {
+    "tap": { "label": { "zh-CN": "点击图标" }, "value": "number" }
+  }
+}

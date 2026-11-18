@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: transparent; overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<script type="module">
+import { host } from "/sdk/m20-custom.js";
+
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+
+const st = {
+  ax: 0, ay: 0, angle: 0, flat: false, range: 8,
+  bx: 0, by: 0, tx: 0, ty: 0,
+  flash: 0, W: 0, H: 0, running: false
+};
+
+/* ---------- 基础绘制工具 ---------- */
+function rr(x, y, w, h, r) {
+  const rad = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
+}
+
+function geom() {
+  const W = st.W, H = st.H;
+  const dialH = H * 0.70;
+  const R = Math.max(24, Math.min((W - 40) / 2, dialH / 2 - 8));
+  const cx = W / 2;
+  const cy = dialH / 2 + 4;
+  const panelTop = cy + R + 10;
+  const panelH = H - panelTop - 10;
+  return { cx: cx, cy: cy, R: R, panelTop: panelTop, panelH: panelH };
+}
+
+/* ---------- 拉丝金属底板 + 四角螺钉 ---------- */
+function screw(x, y) {
+  const r = 4.8;
+  const g = ctx.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.15, x, y, r);
+  g.addColorStop(0, "#b3bac2");
+  g.addColorStop(0.55, "#767d85");
+  g.addColorStop(1, "#262b31");
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.6, y - r * 0.6);
+  ctx.lineTo(x + r * 0.6, y + r * 0.6);
+  ctx.strokeStyle = "rgba(8,10,12,0.9)"; ctx.lineWidth = 1.6; ctx.stroke();
+}
+
+function drawPlate(W, H) {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, "#343b43");
+  g.addColorStop(0.45, "#1d2228");
+  g.addColorStop(1, "#0d1013");
+  rr(1, 1, W - 2, H - 2, 14);
+  ctx.fillStyle = g; ctx.fill();
+
+  ctx.save();
+  rr(1, 1, W - 2, H - 2, 14);
+  ctx.clip();
+  ctx.lineWidth = 1;
+  for (let y = 2; y < H; y += 3) {
+    const a = 0.010 + 0.016 * (0.5 + 0.5 * Math.sin(y * 12.9898));
+    ctx.strokeStyle = "rgba(255,255,255," + a.toFixed(3) + ")";
+    ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); ctx.stroke();
+  }
+  ctx.restore();
+
+  rr(1, 1, W - 2, H - 2, 14);
+  ctx.strokeStyle = "rgba(0,0,0,0.85)"; ctx.lineWidth = 2; ctx.stroke();
+  rr(3.5, 3.5, W - 7, H - 7, 12);
+  ctx.strokeStyle = "rgba(255,255,255,0.07)"; ctx.lineWidth = 1; ctx.stroke();
+
+  const m = 15;
+  screw(m, m); screw(W - m, m); screw(m, H - m); screw(W - m, H - m);
+}
+
+/* ---------- 机械表盘 ---------- */
+function drawDial(g) {
+  const cx = g.cx, cy = g.cy, R = g.R;
+  const flat = st.flat;
+
+  // 凹槽
+  ctx.beginPath(); ctx.arc(cx, cy, R + 3, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fill();
+
+  // 金属外圈
+  const mg = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+  mg.addColorStop(0, "#5b636b");
+  mg.addColorStop(0.18, "#e8edf2");
+  mg.addColorStop(0.38, "#98a0a8");
+  mg.addColorStop(0.55, "#454c53");
+  mg.addColorStop(0.72, "#b9c1c8");
+  mg.addColorStop(0.88, "#6c737a");
+  mg.addColorStop(1, "#31363c");
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = mg; ctx.fill();
+
+  // 滚花
+  const teeth = 96;
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2;
+    const r0 = R * 0.935, r1 = R * 0.995;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+    ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.strokeStyle = i % 2 ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.35)";
+    ctx.lineWidth = Math.max(1, R * 0.018);
+    ctx.stroke();
+  }
+
+  // 内斜面
+  const ig = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R * 0.9);
+  ig.addColorStop(0, "#2b3036");
+  ig.addColorStop(1, "#0a0d0f");
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.9, 0, Math.PI * 2);
+  ctx.fillStyle = ig; ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // 玻璃面
+  const RG = R * 0.78;
+  const gg = ctx.createRadialGradient(cx - RG * 0.35, cy - RG * 0.45, RG * 0.08, cx, cy, RG);
+  gg.addColorStop(0, flat ? "#1d5f48" : "#1b4a66");
+  gg.addColorStop(0.55, flat ? "#0c2a20" : "#0b2334");
+  gg.addColorStop(1, "#050f0b");
+  ctx.beginPath(); ctx.arc(cx, cy, RG, 0, Math.PI * 2);
+  ctx.fillStyle = gg; ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2; ctx.stroke();
+
+  // 玻璃内刻线
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, RG * 0.985, 0, Math.PI * 2); ctx.clip();
+
+  ctx.setLineDash([3, 5]);
+  ctx.strokeStyle = "rgba(170,245,210,0.20)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - RG, cy); ctx.lineTo(cx + RG, cy);
+  ctx.moveTo(cx, cy - RG); ctx.lineTo(cx, cy + RG);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = "rgba(170,245,210,0.13)";
+  for (const k of [0.34, 0.58]) {
+    ctx.beginPath(); ctx.arc(cx, cy, RG * k, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  for (let a = 0; a < 360; a += 5) {
+    const rad = (a * Math.PI) / 180;
+    const major = a % 30 === 0;
+    const mid = a % 10 === 0;
+    const r0 = RG * 0.985 - (major ? RG * 0.085 : mid ? RG * 0.055 : RG * 0.032);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(rad) * RG * 0.985, cy + Math.sin(rad) * RG * 0.985);
+    ctx.lineTo(cx + Math.cos(rad) * r0, cy + Math.sin(rad) * r0);
+    ctx.strokeStyle = major ? "rgba(150,255,200,0.55)" : "rgba(150,255,200,0.22)";
+    ctx.lineWidth = major ? 1.6 : 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 中心容差圈
+  const Rb = RG * 0.215;
+  ctx.beginPath(); ctx.arc(cx, cy, Rb * 1.28, 0, Math.PI * 2);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = flat ? "rgba(95,235,155,0.85)" : "rgba(255,190,80,0.45)";
+  ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fill();
+
+  // 气泡
+  const tr = RG * 0.62;
+  const px = cx + st.bx * tr;
+  const py = cy + st.by * tr;
+  const bc = flat ? "96,240,150" : "255,190,80";
+
+  ctx.save();
+  ctx.shadowColor = "rgba(" + bc + ",0.85)";
+  ctx.shadowBlur = flat ? 22 : 14;
+  const bgr = ctx.createRadialGradient(px - Rb * 0.3, py - Rb * 0.35, Rb * 0.08, px, py, Rb);
+  bgr.addColorStop(0, "rgba(255,255,255,0.95)");
+  bgr.addColorStop(0.35, "rgba(" + bc + ",0.72)");
+  bgr.addColorStop(1, "rgba(" + bc + ",0.16)");
+  ctx.beginPath(); ctx.arc(px, py, Rb, 0, Math.PI * 2);
+  ctx.fillStyle = bgr; ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath(); ctx.arc(px, py, Rb, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(px - Rb * 0.32, py - Rb * 0.36, Rb * 0.26, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fill();
+
+  // 玻璃反光
+  ctx.beginPath();
+  ctx.arc(cx - RG * 0.22, cy - RG * 0.26, RG * 0.6, Math.PI * 1.06, Math.PI * 1.62);
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = RG * 0.1;
+  ctx.stroke();
+
+  // 归零提示
+  if (st.flash > 0) {
+    const a = Math.min(1, st.flash * 1.6);
+    ctx.save();
+    ctx.globalAlpha = a;
+    const tw = RG * 0.72, th = RG * 0.2;
+    rr(cx - tw / 2, cy + RG * 0.46, tw, th, th / 2);
+    ctx.fillStyle = "rgba(20,255,150,0.16)"; ctx.fill();
+    ctx.strokeStyle = "rgba(80,255,180,0.7)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = "rgba(170,255,215,0.95)";
+    ctx.font = "700 " + Math.round(th * 0.55) + "px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("ZERO SET", cx, cy + RG * 0.46 + th / 2);
+    ctx.restore();
+  }
+}
+
+/* ---------- 数字读数面板 ---------- */
+function fmt(v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
+
+function cell(cxv, cyv, label, value, color, big) {
+  const lh = Math.max(8, Math.min(12, st.H * 0.026));
+  const vh = big
+    ? Math.max(15, Math.min(24, st.H * 0.056))
+    : Math.max(12, Math.min(19, st.H * 0.045));
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "600 " + lh.toFixed(1) + "px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "rgba(190,215,225,0.45)";
+  ctx.fillText(label, cxv, cyv - vh * 1.15);
+  ctx.font = "700 " + vh.toFixed(1) + "px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = color;
+  ctx.shadowColor = color; ctx.shadowBlur = 8;
+  ctx.fillText(value, cxv, cyv + vh * 0.18);
+  ctx.shadowBlur = 0;
+}
+
+function drawPanel(g) {
+  const panelTop = g.panelTop, panelH = g.panelH;
+  if (panelH < 28) return;
+  const x0 = 13, w = st.W - 26;
+  const rad = Math.min(10, panelH / 2);
+
+  rr(x0, panelTop, w, panelH, rad);
+  const gd = ctx.createLinearGradient(0, panelTop, 0, panelTop + panelH);
+  gd.addColorStop(0, "#0a0e11");
+  gd.addColorStop(1, "#04070a");
+  ctx.fillStyle = gd; ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1; ctx.stroke();
+
+  const ledC = st.flat ? "#37e07a" : "#ffb733";
+
+  // 顶部铭牌
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.font = "600 9px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "rgba(200,225,215,0.42)";
+  ctx.fillText("M E C H A N I C A L   L E V E L", x0 + 12, panelTop + 13);
+
+  const lx = x0 + w - 15, ly = panelTop + 13;
+  ctx.beginPath(); ctx.arc(lx, ly, 3.2, 0, Math.PI * 2);
+  const lg = ctx.createRadialGradient(lx - 1, ly - 1, 0.4, lx, ly, 4.6);
+  lg.addColorStop(0, "#ffffff");
+  lg.addColorStop(0.4, ledC);
+  lg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = lg;
+  ctx.shadowColor = ledC; ctx.shadowBlur = st.flat ? 10 : 6;
+  ctx.fill(); ctx.shadowBlur = 0;
+
+  ctx.textAlign = "right";
+  ctx.font = "600 9px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = st.flat ? "rgba(80,235,150,0.92)" : "rgba(255,190,80,0.92)";
+  ctx.fillText(st.flat ? "LEVEL" : "TILT", lx - 10, panelTop + 13);
+
+  // 分隔线
+  ctx.strokeStyle = "rgba(255,255,255,0.07)"; ctx.lineWidth = 1;
+  for (const fx of [0.315, 0.685]) {
+    const dx = x0 + w * fx;
+    ctx.beginPath();
+    ctx.moveTo(dx, panelTop + panelH * 0.34);
+    ctx.lineTo(dx, panelTop + panelH * 0.92);
+    ctx.stroke();
+  }
+
+  const vy = panelTop + panelH * 0.68;
+  cell(x0 + w * 0.155, vy, "X", fmt(st.ax), st.flat ? "#7ff0c0" : "#7fe0ff");
+  cell(x0 + w * 0.5, vy, "TILT", st.angle.toFixed(1) + "°",
+       st.flat ? "#5effb0" : "#ffcf5e", true);
+  cell(x0 + w * 0.845, vy, "Y", fmt(st.ay), st.flat ? "#7ff0c0" : "#7fe0ff");
+}
+
+/* ---------- 主绘制 ---------- */
+function draw() {
+  if (!st.W || !st.H) return;
+  ctx.clearRect(0, 0, st.W, st.H);
+  drawPlate(st.W, st.H);
+  const g = geom();
+  drawDial(g);
+  drawPanel(g);
+}
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  st.W = cv.clientWidth || cv.parentElement.clientWidth || 0;
+  st.H = cv.clientHeight || cv.parentElement.clientHeight || 0;
+  cv.width = Math.max(1, Math.round(st.W * dpr));
+  cv.height = Math.max(1, Math.round(st.H * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+
+/* ---------- 动画：气泡平滑移动 ---------- */
+function tick() {
+  let moving = false;
+  st.bx += (st.tx - st.bx) * 0.22;
+  st.by += (st.ty - st.by) * 0.22;
+  if (Math.abs(st.tx - st.bx) > 0.0015 || Math.abs(st.ty - st.by) > 0.0015) {
+    moving = true;
+  } else {
+    st.bx = st.tx; st.by = st.ty;
+  }
+  if (st.flash > 0) {
+    st.flash = Math.max(0, st.flash - 0.03);
+    moving = true;
+  }
+  draw();
+  if (moving) requestAnimationFrame(tick);
+  else st.running = false;
+}
+
+function kick() {
+  if (st.running || !st.W) return;
+  st.running = true;
+  requestAnimationFrame(tick);
+}
+
+/* ---------- 与 Python 通信 ---------- */
+function setProps(p) {
+  if (typeof p.ax === "number") st.ax = p.ax;
+  if (typeof p.ay === "number") st.ay = p.ay;
+  if (typeof p.angle === "number") st.angle = p.angle;
+  st.flat = !!p.flat;
+  if (typeof p.range === "number" && p.range > 0.5) st.range = p.range;
+
+  const cl = function (v) { return Math.max(-1, Math.min(1, v)); };
+  // 气泡浮向高处：与重力分量方向相反
+  st.tx = cl(-st.ax / st.range);
+  st.ty = cl(-st.ay / st.range);
+  kick();
+}
+
+host.onProps(setProps);
+
+host.on(function (data) {
+  if (data && data.cmd === "zeroed") {
+    st.flash = 1;
+    kick();
+  }
+});
+
+cv.addEventListener("pointerdown", function () { host.emit("tap", 0); });
+window.addEventListener("resize", resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
+
+resize();
+draw();
+kick();
+</script>
+</body>
+</html>
