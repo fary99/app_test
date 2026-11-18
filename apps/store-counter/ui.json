@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "texts": {
+    "zh-CN": {
+      "title": "计数器",
+      "count": "0",
+      "inc": "加一",
+      "reset": "清零"
+    },
+    "en-US": {
+      "title": "Counter",
+      "count": "0",
+      "inc": "+1",
+      "reset": "Reset"
+    }
+  },
+  "pages": [
+    {
+      "id": "home",
+      "layout": { "type": "column", "gap": "md", "padding": "lg", "align": "center" },
+      "children": [
+        { "type": "Label", "text": "@title", "font": "title" },
+        { "type": "Label", "id": "count", "text": "@count", "font": "big" },
+        {
+          "type": "Row",
+          "gap": "md",
+          "children": [
+            { "type": "Button", "text": "@inc", "tone": "primary", "onTap": "inc" },
+            { "type": "Button", "text": "@reset", "onTap": "reset" }
+          ]
+        }
+      ]
+    }
+  ]
+}

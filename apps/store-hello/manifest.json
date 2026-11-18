@@ -1,0 +1,8 @@
+{
+  "id": "store-hello",
+  "name": { "zh-CN": "商店你好", "en-US": "Store Hello" },
+  "version": "0.1.0",
+  "icon": "icon.svg",
+  "orientation": "any",
+  "permissions": []
+}

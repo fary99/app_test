@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "texts": {
+    "zh-CN": {
+      "title": "商店你好",
+      "body": "这是从应用商店安装的示例应用。"
+    },
+    "en-US": {
+      "title": "Store Hello",
+      "body": "Sample app installed from the app store."
+    }
+  },
+  "pages": [
+    {
+      "id": "home",
+      "layout": { "type": "column", "gap": "md", "padding": "lg" },
+      "children": [
+        { "type": "Label", "text": "@title", "font": "title" },
+        { "type": "Label", "text": "@body", "font": "body" }
+      ]
+    }
+  ]
+}

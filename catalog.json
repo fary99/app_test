@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "id": "store-counter",
+      "name": {
+        "zh-CN": "计数器",
+        "en-US": "Counter"
+      },
+      "summary": {
+        "zh-CN": "示例应用 store-counter",
+        "en-US": "Sample app store-counter"
+      },
+      "version": "0.1.0",
+      "min_sdk": "0.3.0",
+      "icon": "https://raw.githubusercontent.com/fary99/app_test/main/apps/store-counter/icon.svg",
+      "download": "https://raw.githubusercontent.com/fary99/app_test/main/packages/store-counter-0.1.0.zip"
+    },
+    {
+      "id": "store-hello",
+      "name": {
+        "zh-CN": "商店你好",
+        "en-US": "Store Hello"
+      },
+      "summary": {
+        "zh-CN": "示例应用 store-hello",
+        "en-US": "Sample app store-hello"
+      },
+      "version": "0.1.0",
+      "min_sdk": "0.3.0",
+      "icon": "https://raw.githubusercontent.com/fary99/app_test/main/apps/store-hello/icon.svg",
+      "download": "https://raw.githubusercontent.com/fary99/app_test/main/packages/store-hello-0.1.0.zip"
+    }
+  ]
+}

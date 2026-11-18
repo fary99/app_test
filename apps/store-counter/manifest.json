@@ -1,0 +1,9 @@
+{
+  "id": "store-counter",
+  "name": { "zh-CN": "计数器", "en-US": "Counter" },
+  "version": "0.1.0",
+  "icon": "icon.svg",
+  "orientation": "any",
+  "permissions": [],
+  "backend": { "exec": "main.py", "python": "/opt/m20/venv/platform" }
+}
